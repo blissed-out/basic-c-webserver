@@ -28,9 +28,9 @@ int main() {
     struct sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
     
-    accept(client_fd, (struct sockaddr *)&client_addr, (socklen_t *)&client_addr_len);
+    accept(server_fd, (struct sockaddr *)&client_addr, (socklen_t *)&client_addr_len);
     
-    
+    // recieve client
     
     
     return 0;
