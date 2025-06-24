@@ -28,9 +28,12 @@ int main() {
     struct sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
     
-    accept(server_fd, (struct sockaddr *)&client_addr, (socklen_t *)&client_addr_len);
+    client_fd = accept(server_fd, (struct sockaddr *)&client_addr, (socklen_t *)&client_addr_len);
     
-    // recieve client
+    // recieve data from client
+    char buffer[7 * 1024 * 1024];
+    ssize_t recv_response = recv(client_fd, buffer, sizeof(buffer), 0);
+    
     
     
     return 0;
