@@ -43,23 +43,50 @@ int main() {
     char buffer[7 * 1024 * 1024]; // 7 mb
     ssize_t recv_response = recv(client_fd, buffer, sizeof(buffer), 0);
 
-    FILE *html = fopen("index.html", "r");
-    fseek(html, 0, SEEK_END);
-    long filesize = ftell(html);
-    rewind(html);
-    
+    buffer[recv_response] = '\0';
+
+    char method[10], path[999];
+    sscanf(buffer, "%s %s", method, path);
+
+    FILE *file = fopen(path + 1, "r");
+
+    if (file == NULL) {
+      perror("file open failed");
+      char failure_message[] = "<html><body><h1>404 Not Found</h1></body></html>";
+      char buffer[999];
+      
+      snprintf(buffer, sizeof(buffer),
+               "HTTP/1.1 404 Not Found\r\n"
+               "Content-Length: %lu\r\n"
+               "Content-Type: text/html\r\n"
+               "\r\n"
+               , strlen(failure_message));
+      
+      send(client_fd, buffer, strlen(buffer), 0);
+      send(client_fd, failure_message, strlen(failure_message), 0);
+      close(client_fd);
+      continue;
+   }
+
+    fseek(file, 0, SEEK_END);
+    long filesize = ftell(file);
+    rewind(file);
+
     char *body = malloc(filesize);
-    fread(body, filesize, 1, html);
-    fclose(html);
-    
-    char header[256];
-    snprintf(header, sizeof(header), "HTTP/1.1 200 OK\r\n"
+    fread(body, filesize, 1, file);
+    fclose(file);
+
+    char header[999];
+    snprintf(header, sizeof(header),
+             "HTTP/1.1 200 OK\r\n"
              "Content-Length: %ld\r\n"
              "Content-Type: text/html\r\n"
-             "\r\n", filesize);
-    
+             "\r\n",
+             filesize);
+
     send(client_fd, header, strlen(header), 0);
     send(client_fd, body, strlen(body), 0);
+    free(body);
     close(client_fd);
   }
 
