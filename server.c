@@ -70,11 +70,25 @@ void handle_client(int server_fd) {
     }
 
     // recieve data from client
-    char buffer[BUFFER_SIZE]; // 100 mb
-    ssize_t recv_response = recv(client_fd, buffer, sizeof(buffer), 0);
+    // dynamically allocate 100 mb memory
+    char *buffer = malloc(BUFFER_SIZE); // 100 mb
+
+    if (!buffer) {
+      perror("malloc failed for buffer");
+      close(client_fd);
+      continue;
+    }
+
+    ssize_t recv_response = recv(client_fd, buffer, BUFFER_SIZE, 0);
 
     if (recv_response < 0) {
       perror("recieve data from client failed");
+      close(client_fd);
+      continue;
+    }
+
+    if (recv_response == 0) {
+      printf("Client disconnected\n");
       close(client_fd);
       continue;
     }
@@ -86,13 +100,17 @@ void handle_client(int server_fd) {
 
     // check if method is GET
     if (strcmp(method, "GET") != 0) {
+
       printf("Your method is not GET, it's %s", method);
       perror("invalid method");
+
       close(client_fd);
+
       continue;
     }
 
     char full_path[1024];
+
     if (strcmp(path, "/") == 0) {
       strcpy(full_path, "index.html");
     } else {
@@ -105,8 +123,10 @@ void handle_client(int server_fd) {
     if (file == NULL) {
       printf("Tried to get %s\n", full_path);
       perror("file open failed");
+
       char failure_message[] =
           "<html><body><h1>404 Not Found</h1></body></html>";
+
       char header[999];
 
       snprintf(header, sizeof(header),
@@ -131,6 +151,7 @@ void handle_client(int server_fd) {
 
       close(
           client_fd); // close the client connection after sending the response
+
       continue;
     }
 
@@ -139,7 +160,27 @@ void handle_client(int server_fd) {
     rewind(file);
 
     char *body = malloc(filesize);
-    fread(body, filesize, 1, file);
+
+    if (!body) {
+      perror("malloc failed for body");
+
+      close(client_fd);
+
+      continue;
+    }
+
+    // size_t bytes_read = fread(body, filesize, 1, file);
+    size_t bytes_read = fread(body, 1, filesize, file);
+
+    if (bytes_read != filesize) {
+      perror("fread failed");
+
+      free(body);
+      close(client_fd);
+
+      continue;
+    }
+
     fclose(file);
 
     // send body
@@ -155,9 +196,22 @@ void handle_client(int server_fd) {
 
     printf("this is header: %s", header);
 
-    send(client_fd, header, strlen(header), 0);
-    send(client_fd, body, filesize, 0);
+    int header_response = send(client_fd, header, strlen(header), 0);
+
+    if (header_response < 0) {
+      perror("header send failed");
+    }
+
+    ssize_t body_response = send(client_fd, body, filesize, 0);
+
+    if (body_response < 0) {
+      perror("body send failed");
+    }
+
     free(body);
+
+    free(buffer);
+
     close(client_fd);
   }
 }
