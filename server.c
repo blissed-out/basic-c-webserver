@@ -19,6 +19,8 @@ const char* get_content_type(const char *filename) {
     if (strcmp(ext, ".gif") == 0) return "image/gif";
     if (strcmp(ext, ".svg") == 0) return "image/svg+xml";
     if (strcmp(ext, ".txt") == 0) return "text/plain";
+    if (strcmp(ext, ".mp4")) return "video/mp4";
+    if (strcmp(ext, ".webp")) return "image/webp";
 
     return "application/octet-stream";
 }
@@ -73,7 +75,7 @@ int main() {
         snprintf(full_path, sizeof(full_path), "%s", path + 1); // index.html
     }
 
-    FILE *file = fopen(full_path, "r");
+    FILE *file = fopen(full_path, "rb");
 
     // send 404 response if file not found
     if (file == NULL) {
@@ -116,7 +118,7 @@ int main() {
     printf("this is header: %s", header);
 
     send(client_fd, header, strlen(header), 0);
-    send(client_fd, body, strlen(body), 0);
+    send(client_fd, body, filesize, 0);
     free(body);
     close(client_fd);
   }
