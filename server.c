@@ -50,6 +50,9 @@ const char *get_content_type(const char *filename) {
 
   if (strcmp(ext, ".webp") == 0)
     return "image/webp";
+  
+  if (strcmp(ext, ".mp3") == 0)
+    return "audio/mpeg";
 
   // incase we something random files are being served
   return "application/octet-stream";
